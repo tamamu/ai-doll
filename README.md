@@ -17,8 +17,8 @@ Conversation is rule-based, however the emotion affect responses.
 
 + recognition.py
 
-	Recognize the text the doll listened.
+    Recognize the text the doll listened.
 
 + dialogue.json
 
-	Response sample for dialogue.
+    Response sample for dialogue.
