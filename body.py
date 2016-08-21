@@ -1,10 +1,10 @@
 import sys
 import socket
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QLabel, QApplication, QGridLayout)
-from PyQt5.QtCore import (Qt, QSize, QRect, QPoint, QPointF, QPropertyAnimation, QTimer)
+from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QLabel, QApplication, QGridLayout, QSizePolicy)
+from PyQt5.QtCore import (Qt, QSize, QRect, QPoint, QPointF, QPropertyAnimation, QTimer, QByteArray)
 from PyQt5.QtGui import (QPixmap, QPainter, QPen, QBrush, QPolygonF, QPolygon)
-from PyQt5.QtNetwork import (QTcpServer, QHostAddress)
+from PyQt5.QtNetwork import (QUdpSocket, QHostAddress)
 
 
 class Body(QWidget):
@@ -13,23 +13,18 @@ class Body(QWidget):
         self.initUI()
         self.mesbox = MessageBox(self)
         self.mesbox.moveFromBase(self.mapFromGlobal(QPoint(0,0)))
-        self.server = QLocalServer(self)
-        self.server.listen(QHostAddress("127.0.0.1"), 8888)
-        self.connect(self.server, SIGNAL("newConnection()"), self.newConection)
-        self.connections = []
+        self.socket = QUdpSocket(self)
+        self.socket.bind(QHostAddress.LocalHost, 1234)
+        self.socket.readyRead.connect(self.receive)
+        self.old_node = '0'
 
-    def newConnection(self):
-        client = self.server.nextPendingConnection()
-        client.nextBlockSize = 0
-        self.connections.append(client)
-
-        self.connect(client, SIGNAL("readyRead()"), self.receiveMessage)
-        self.connect(client, SIGNAL("disconnected()"), self.removeConnection)
-        self.connect(client, SIGNAL("error()"), self.socketError)
-
-    def receiveMessage(self):
-
-
+    def receive(self):
+        while(self.socket.hasPendingDatagrams()):
+            datagram = QByteArray()
+            size = self.socket.pendingDatagramSize()
+            data,addr,port = self.socket.readDatagram(size)
+            message = data.strip().decode("utf-8")
+            self.mesbox.showMessage(message)
 
     def initUI(self):
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
@@ -37,8 +32,8 @@ class Body(QWidget):
         self.show()
 
         hbox = QHBoxLayout(self)
-        pixmap = QPixmap("rem1.png")
-        self.setMask(pixmap.mask())
+        pixmap = QPixmap("rem0.png")
+        #self.setMask(pixmap.mask())
         lbl = QLabel(self)
         lbl.setPixmap(pixmap)
 
@@ -64,10 +59,10 @@ class MessageBox(QWidget):
         self.anime = QPropertyAnimation(self)
         self.timer = QTimer(self)
         self.initUI()
-        self.showMessage("あいうえお")
 
     def initUI(self):
-        self.resize(200,100)
+        self.setFixedSize(200,100)
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
 
@@ -76,13 +71,11 @@ class MessageBox(QWidget):
         self.anime.setDuration(150)
 
         layout = QGridLayout(self)
-        self.label.setText("Hogehoge")
         self.label.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         layout.addWidget(self.label)
         self.setLayout(layout)
 
         self.setWindowOpacity(0.0)
-        self.showAnimation()
         self.show()
 
     def showAnimation(self):
@@ -98,7 +91,7 @@ class MessageBox(QWidget):
     def showMessage(self, message):
         self.label.setText(message)
         self.showAnimation()
-        self.timer.singleShot(6000, self.hideAnimation)
+        self.timer.singleShot(3000, self.hideAnimation)
 
     def moveFromBase(self, point):
         self.move(point.x()-self.rect().width(), point.y()+self.rect().height())
