@@ -45,6 +45,6 @@ Conversation is rule-based, however the emotion affect responses.
     {
         "type": "image",
         "body": "body-image-name",
-        "face": "face-image-name"
+        "badge": "badge-image-name"
     }
     ```

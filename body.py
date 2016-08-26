@@ -2,11 +2,12 @@ import os
 import sys
 import socket
 import json
-from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QLabel, QApplication, QGridLayout, QSizePolicy, QSystemTrayIcon, QMenu)
-from PyQt5.QtCore import (Qt, QSize, QRect, QPoint, QPointF, QPropertyAnimation, QTimer, QByteArray, QObject)
-from PyQt5.QtGui import (QPixmap, QPainter, QPen, QBrush, QPolygonF, QPolygon, QFont, QIcon)
-from PyQt5.QtNetwork import (QUdpSocket, QHostAddress)
+
+from PyQt5 import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtNetwork import *
 
 _APP_DIR_ = '/.config/ai-doll/'
 _MODELS_DIR_ = 'models/'
@@ -17,29 +18,55 @@ class Body(QWidget):
     def __init__(self, root):
         super().__init__()
         self.root = root
-        self.initUI(self.root.settings['model']['body'])
+        self.image = QImage(self.root.settings['model']['body'])
+        self.initUI()
 
-    def initUI(self, image):
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+    def initUI(self):
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_ShowWithoutActivating)
-        self.show()
 
-        hbox = QHBoxLayout(self)
-        pixmap = QPixmap(image)
-        #self.setMask(pixmap.mask())
-        lbl = QLabel(self)
-        lbl.setPixmap(pixmap)
+        mask = QPixmap(self.image)
+        self.setFixedSize(mask.width(), mask.height())
+        self.setMask(mask.mask())
 
-        hbox.addWidget(lbl)
-        self.setLayout(hbox)
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.drawImage(0, 0, self.image)
 
     def positionBox(self):
         for box in self.root.mbs:
             box.moveFromBase(self)
 
+    def showAnimation(self):
+        for box in self.root.mbs:
+            box.show()
+        self.positionBox()
+        self.setWindowOpacity(0.0)
+        self.show()
+        anime = QPropertyAnimation(self)
+        anime.setTargetObject(self)
+        anime.setPropertyName(b"windowOpacity")
+        anime.setDuration(200)
+        anime.setStartValue(0.0)
+        anime.setEndValue(1.0)
+        anime.start()
+
+    def hideAnimation(self):
+        self.setWindowOpacity(0.0)
+        anime = QPropertyAnimation(self)
+        anime.setTargetObject(self)
+        anime.setPropertyName(b"windowOpacity")
+        anime.setDuration(200)
+        anime.setStartValue(1.0)
+        anime.setEndValue(0.0)
+        anime.finished.connect(self.hide)
+        anime.start()
+
     def mousePressEvent(self, event):
         self.offset = event.pos()
+        if event.button() == Qt.RightButton:
+            self.root.toggle()
 
     def mouseMoveEvent(self, event):
         x=event.globalX()
@@ -48,6 +75,63 @@ class Body(QWidget):
         y_w = self.offset.y()
         self.move(x-x_w, y-y_w)
         self.positionBox()
+
+class Badge(QWidget):
+    def __init__(self, root):
+        super().__init__()
+        self.root = root
+        self.image = QImage(self.root.settings['model']['badge'])
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self.setAttribute(Qt.WA_ShowWithoutActivating)
+
+        mask = QPixmap(self.image)
+        self.setFixedSize(mask.width(), mask.height())
+        self.setMask(mask.mask())
+
+        g = QDesktopWidget().screenGeometry(-1)
+        self.move(g.right() - self.width()*1.25, g.bottom() - self.height()*1.25)
+
+    def positionBox(self):
+        for box in self.root.mbs:
+            box.moveFromBase(self)
+
+    def showAnimation(self):
+        self.positionBox()
+        for box in self.root.mbs:
+            if box.cnt > 0:
+                box.hide()
+        self.setWindowOpacity(0.0)
+        self.show()
+        anime = QPropertyAnimation(self)
+        anime.setTargetObject(self)
+        anime.setPropertyName(b"windowOpacity")
+        anime.setDuration(200)
+        anime.setStartValue(0.0)
+        anime.setEndValue(1.0)
+        anime.start()
+
+    def hideAnimation(self):
+        self.setWindowOpacity(0.0)
+        anime = QPropertyAnimation(self)
+        anime.setTargetObject(self)
+        anime.setPropertyName(b"windowOpacity")
+        anime.setDuration(200)
+        anime.setStartValue(1.0)
+        anime.setEndValue(0.0)
+        anime.finished.connect(self.hide)
+        anime.start()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.drawImage(0, 0, self.image)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.RightButton:
+            self.root.toggle()
 
 class MessageBox(QWidget):
     def __init__(self, font):
@@ -81,7 +165,6 @@ class MessageBox(QWidget):
         self.setWindowOpacity(0.0)
 
     def moveDown(self):
-        self.cnt += 1
         self.anime2.setTargetObject(self)
         self.anime2.setPropertyName(b"pos")
         self.anime2.setDuration(200)
@@ -120,14 +203,14 @@ class MessageBox(QWidget):
         self.show()
         self.label.setText(message)
         lw = self.label.fontMetrics().boundingRect(message).width()
-        self.move(track.pos().x()-lw-24, track.pos().y()+100)
+        self.move(track.pos().x()-lw-48, track.pos().y())
         self.showAnimation()
         self.timer.singleShot(9000, self.hideAnimation)
 
     def moveFromBase(self, track):
         self.anime2.stop()
         lw = self.label.fontMetrics().boundingRect(self.label.text()).width()
-        self.move(track.pos().x()-lw-24, track.pos().y()+100+self.cnt*72)
+        self.move(track.pos().x()-lw-48, track.pos().y()+self.cnt*72)
 
     def enterEvent(self, event):
         self.repaint()
@@ -165,6 +248,14 @@ class UdpReceiver(QObject):
         QObject.__init__(self)
         self.settings = settings
         self.font = QFont(self.settings['font'], 16)
+        if self.settings['init_style'] == 'body':
+            self.isBadge = False
+        elif self.setings['init_style'] == 'badge':
+            self.isBadge = True
+        else:
+            print('Settings parse error: use body or badge for init_style')
+            QApplication.exit(-1)
+        self.isBadge = False
         self.initialize()
 
     def initialize(self):
@@ -173,11 +264,26 @@ class UdpReceiver(QObject):
         self.socket.readyRead.connect(self.receive)
         self.mbs = []
         self.body = Body(self)
+        self.badge = Badge(self)
         self.mtimer = QTimer(self)
         self.mtimer.setInterval(1000)
         self.mtimer.setSingleShot(False)
         self.mtimer.timeout.connect(self.closeBox)
         self.mtimer.start()
+        if self.isBadge:
+            self.badge.show()
+        else:
+            self.body.show()
+
+    def toggle(self):
+        if self.isBadge:
+            self.isBadge = False
+            self.badge.hideAnimation()
+            self.body.showAnimation()
+        else:
+            self.isBadge = True
+            self.body.hideAnimation()
+            self.badge.showAnimation()
 
     def closeBox(self):
         for box in self.mbs:
@@ -197,12 +303,18 @@ class UdpReceiver(QObject):
         if message == 'kill':
             QApplication.exit(0)
         else:
-            print(message)
             msgbox = MessageBox(self.font)
-            msgbox.showMessage(self.body, message)
-            self.closeBox()
             for box in self.mbs:
-                box.moveDown()
+                box.cnt+=1
+            if self.isBadge:
+                for box in self.mbs:
+                    box.hide()
+                msgbox.showMessage(self.badge, message)
+            else:
+                msgbox.showMessage(self.body, message)
+                for box in self.mbs:
+                    box.moveDown()
+            self.closeBox()
             self.mbs = (list(filter((lambda b: b.closed == False), self.mbs)))
             self.mbs.append(msgbox)
 
@@ -214,10 +326,10 @@ def model_load(path):
     data = json.loads(f.read())
     if data['type'] == 'image':
         data['body'] = path + data['body']
-        data['face'] = path + data['face']
+        data['badge'] = path + data['badge']
         return data
     elif data['type'] == 'live2d':
-        print('Not implemented!')
+        print('Model type error: live2d is not implemented!')
         sys.exit(-1)
     else:
         print('Model type error: use image or live2d')
@@ -243,7 +355,7 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     app = QApplication(sys.argv)
-    trayIcon = QSystemTrayIcon(QIcon(QPixmap(settings['model']['face'])), app)
+    trayIcon = QSystemTrayIcon(QIcon(QPixmap(settings['model']['badge'])), app)
     menu = QMenu()
     exitAction = menu.addAction('Exit')
     exitAction.triggered.connect(app.exit)
