@@ -223,6 +223,8 @@ class MessageBox(QWidget):
             self.timer.singleShot(9000, self.hideAnimation)
 
     def updateMessage(self, track, message):
+        if self.label.text() == message:
+            return
         self.setFixedSize(0, 64)
         self.label.setText(message)
         lw = self.label.fontMetrics().boundingRect(message).width()
