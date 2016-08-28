@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import os
 import sys
 import socket
@@ -134,11 +137,14 @@ class Badge(QWidget):
             self.root.toggle()
 
 class MessageBox(QWidget):
-    def __init__(self, font):
+    def __init__(self, font, parent=None, fixed=False, fid=None):
         super(MessageBox, self).__init__()
         self.label = QLabel(self)
         self.label.setFont(font)
         self.cnt = 0
+        self.parent = parent
+        self.fid = fid
+        self.fixed = fixed
         self.closed = False
         self.anime = QPropertyAnimation(self)
         self.anime2 = QPropertyAnimation(self)
@@ -147,7 +153,7 @@ class MessageBox(QWidget):
 
     def initUI(self):
         self.resize(0,64)
-        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.Tool | Qt.WindowStaysOnTopHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_DeleteOnClose)
@@ -164,16 +170,23 @@ class MessageBox(QWidget):
 
         self.setWindowOpacity(0.0)
 
-    def moveDown(self):
+    def moveByCount(self, track):
         self.anime2.setTargetObject(self)
         self.anime2.setPropertyName(b"pos")
         self.anime2.setDuration(200)
         sx = self.pos().x()
         sy = self.pos().y()
         self.anime2.setStartValue(QPoint(sx,sy))
-        self.anime2.setEndValue(QPoint(sx,sy+72))
+        self.anime2.setEndValue(QPoint(sx,track.pos().y()+self.cnt*72))
         self.anime2.start()
-        self.setWindowOpacity(1.0 - self.cnt*0.2)
+        if self.fixed:
+            self.setWindowOpacity(1.0)
+        else:
+            self.setWindowOpacity(1.0 - self.cnt*0.2)
+
+    def inc(self):
+        if not self.fixed:
+            self.cnt+=1
 
     def mousePressEvent(self, event):
         self.anime.stop()
@@ -198,6 +211,7 @@ class MessageBox(QWidget):
 
     def close(self):
         self.closed = True
+        self.parent.boxCloseEvent()
 
     def showMessage(self, track, message):
         self.show()
@@ -205,7 +219,14 @@ class MessageBox(QWidget):
         lw = self.label.fontMetrics().boundingRect(message).width()
         self.move(track.pos().x()-lw-48, track.pos().y())
         self.showAnimation()
-        self.timer.singleShot(9000, self.hideAnimation)
+        if self.fixed == False:
+            self.timer.singleShot(9000, self.hideAnimation)
+
+    def updateMessage(self, track, message):
+        self.setFixedSize(0, 64)
+        self.label.setText(message)
+        lw = self.label.fontMetrics().boundingRect(message).width()
+        self.move(track.pos().x()-lw-48, track.pos().y())
 
     def moveFromBase(self, track):
         self.anime2.stop()
@@ -285,6 +306,27 @@ class UdpReceiver(QObject):
             self.body.hideAnimation()
             self.badge.showAnimation()
 
+    def boxCloseEvent(self):
+        self.closeBox()
+        self.sortByFixed()
+        if self.isBadge:
+            if len(self.mbs) > 0:
+                self.mbs[0].show()
+                self.mbs[0].moveByCount(self.badge)
+                for i in range(1,len(self.mbs)):
+                    self.mbs[i].hide()
+        else:
+            for box in self.mbs:
+                box.moveByCount(self.body)
+
+    def sortByFixed(self):
+        fixed = (list(filter((lambda b: b.fixed == True), self.mbs)))
+        nonFixed = (list(filter((lambda b: b.fixed == False), self.mbs)))
+        fixed.extend(nonFixed)
+        self.mbs = fixed
+        for i in range(len(self.mbs)):
+            self.mbs[i].cnt = i
+
     def closeBox(self):
         for box in self.mbs:
             if box.closed:
@@ -300,23 +342,38 @@ class UdpReceiver(QObject):
             self.parse(message)
 
     def parse(self, message):
-        if message == 'kill':
+        req = json.loads(message)
+        if req['type'] == 'kill':
             QApplication.exit(0)
-        else:
-            msgbox = MessageBox(self.font)
+        elif req['type'] == 'update':
             for box in self.mbs:
-                box.cnt+=1
+                if box.fid == req['id']:
+                    if self.isBadge:
+                        box.updateMessage(self.badge, req['data'])
+                    else:
+                        box.updateMessage(self.body, req['data'])
+                    break
+        else:
+            if req['type'] == 'message':
+                fixed = False
+                fid = None
+            elif req['type'] == 'fixed':
+                fixed = True
+                fid = req['id']
+            msgbox = MessageBox(self.font, self, fixed, fid)
+            for box in self.mbs:
+                box.inc()
+            self.closeBox()
+            self.mbs.insert(0, msgbox)
+            self.sortByFixed()
             if self.isBadge:
                 for box in self.mbs:
                     box.hide()
-                msgbox.showMessage(self.badge, message)
+                msgbox.showMessage(self.badge, req['data'])
             else:
-                msgbox.showMessage(self.body, message)
+                msgbox.showMessage(self.body, req['data'])
                 for box in self.mbs:
-                    box.moveDown()
-            self.closeBox()
-            self.mbs = (list(filter((lambda b: b.closed == False), self.mbs)))
-            self.mbs.append(msgbox)
+                    box.moveByCount(self.body)
 
     def __del__(self):
         self.socket.close()

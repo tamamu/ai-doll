@@ -8,6 +8,15 @@ It separates body and AI, they communicate by IPC (interprocess communication.)
 
 Conversation is rule-based, however the emotion affect responses.
 
+### Data transmission format  
+Use `message|fixed|update` for `type`.  
+    ```
+    {
+        "type": "message",
+        "id": "message_id",
+        "data": "contents"
+    }
+    ```
 
 ### The role of each file and folder
 
