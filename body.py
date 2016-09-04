@@ -270,7 +270,7 @@ class UdpReceiver(QObject):
     def __init__(self, settings):
         QObject.__init__(self)
         self.settings = settings
-        self.font = QFont(self.settings['font'], 16)
+        self.font = QFont(self.settings['font'], 13)
         if self.settings['init_style'] == 'body':
             self.isBadge = False
         elif self.setings['init_style'] == 'badge':
