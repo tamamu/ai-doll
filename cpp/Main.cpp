@@ -1,11 +1,14 @@
 #include <iostream>
 #include <QDebug>
 #include <QApplication>
+#include <QAction>
+#include <QMenu>
 #include <QIcon>
 #include <QFile>
 #include <QSystemTrayIcon>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QObject>
 
 
 #define _SETTINGS_FILE_ "settings.json"
@@ -67,10 +70,28 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	
+	// Read badge path for tray icon
+	//
+	QString badgePath;
+	if (model.scope == User) {
+		badgePath = appDir + QString(_MODELS_DIR_)+"/"+modelName+"/"+model.data.value("badge").toString();
+	} else {
+		badgePath = QString(_MODELS_DIR_)+"/"+modelName+"/"+model.data.value("badge").toString();
+	}
+
+	qDebug() << badgePath;
 	
-//	QSystemTrayIcon *trayIcon = new QSystemTrayIcon();
-//	trayIcon->setIcon(badgePath);
-//	trayIcon->show();
+	QSystemTrayIcon *trayIcon = new QSystemTrayIcon();
+	trayIcon->setIcon(QIcon(badgePath));
+
+	QMenu *menu = new QMenu();
+	
+	QAction *exitAction = menu->addAction("Exit");
+	QObject::connect(exitAction, SIGNAL(triggered()), &app, SLOT(quit()));
+	menu->addAction(exitAction);
+
+	trayIcon->setContextMenu(menu);
+	trayIcon->show();
 
 	return app.exec();
 }
