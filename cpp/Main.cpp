@@ -11,9 +11,9 @@
 #include <QObject>
 
 
-#define _SETTINGS_FILE_ "settings.json"
-#define _MODELS_DIR_ "models"
-#define _MODEL_FILE_ "model"
+#define SETTINGS_FILE "settings.json"
+#define MODELS_DIR "models"
+#define MODEL_FILE "model"
 
 
 enum FileScope { None, System, User };
@@ -55,7 +55,7 @@ int main(int argc, char **argv)
 
 	//  Load settings file
 	//
-	DataLoadResult settings = loadAppData(appDir, QString(_SETTINGS_FILE_));
+	DataLoadResult settings = loadAppData(appDir, QString(SETTINGS_FILE));
 	if (settings.scope == None) {
 		std::cerr << "Settings file not found: settings.json" << std::endl;
 		exit(1);
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
 	//	Load model file
 	//
 	QString modelName = settings.data.value("model").toString();
-	DataLoadResult model = loadAppData(appDir, QString(_MODELS_DIR_)+"/"+modelName+"/"+_MODEL_FILE_);
+	DataLoadResult model = loadAppData(appDir, QString(MODELS_DIR)+"/"+modelName+"/"+MODEL_FILE);
 	if (model.scope == None) {
 		std::cerr << "Model not found:" << modelName.toUtf8().constData() << std::endl;
 		exit(1);
@@ -74,9 +74,9 @@ int main(int argc, char **argv)
 	//
 	QString badgePath;
 	if (model.scope == User) {
-		badgePath = appDir + QString(_MODELS_DIR_)+"/"+modelName+"/"+model.data.value("badge").toString();
+		badgePath = appDir + QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("badge").toString();
 	} else {
-		badgePath = QString(_MODELS_DIR_)+"/"+modelName+"/"+model.data.value("badge").toString();
+		badgePath = QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("badge").toString();
 	}
 
 	qDebug() << badgePath;
