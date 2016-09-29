@@ -10,6 +10,8 @@
 #include <QJsonObject>
 #include <QObject>
 
+#include "Body.hpp"
+
 
 #define SETTINGS_FILE "settings.json"
 #define MODELS_DIR "models"
@@ -72,11 +74,13 @@ int main(int argc, char **argv)
 	
 	// Read badge path for tray icon
 	//
-	QString badgePath;
+	QString badgePath, bodyPath;
 	if (model.scope == User) {
 		badgePath = appDir + QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("badge").toString();
+		bodyPath = appDir + QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("body").toString();
 	} else {
 		badgePath = QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("badge").toString();
+		bodyPath = QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("body").toString();
 	}
 
 	qDebug() << badgePath;
@@ -92,6 +96,9 @@ int main(int argc, char **argv)
 
 	trayIcon->setContextMenu(menu);
 	trayIcon->show();
+
+	Body *body = new Body(bodyPath);
+	body->show();
 
 	return app.exec();
 }

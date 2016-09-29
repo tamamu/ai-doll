@@ -1,13 +1,25 @@
-#include <QWidget>
+#include "Body.hpp"
 
-class Body : public QWidget {
-	Q_OBJECT
+Body::Body(QString filename)
+{
+	this->image = new QImage(filename);
+	initUI();
+}
 
-public:
-	Body();
+void Body::initUI()
+{
+	this->setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
+	this->setAttribute(Qt::WA_TranslucentBackground);
+	this->setAttribute(Qt::WA_ShowWithoutActivating);
 
-private slots:
-	hide();
-	show();
+	QPixmap pixmap = QPixmap::fromImage(*this->image);
+	QBitmap mask = pixmap.mask();
+	this->setFixedSize(pixmap.width(), pixmap.height());
+	this->setMask(mask);
+}
 
+void Body::paintEvent(QPaintEvent *event)
+{
+	QPainter painter(this);
+	painter.drawImage(0, 0, *this->image);
 }

@@ -8,4 +8,5 @@ INCLUDEPATH += .
 QT += core widgets
 
 # Input
-SOURCES += Main.cpp
+SOURCES += Main.cpp Body.cpp
+HEADERS += Body.hpp
