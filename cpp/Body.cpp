@@ -3,6 +3,7 @@
 Body::Body(QString filename)
 {
 	this->image = new QImage(filename);
+	this->offset = new QPoint(0, 0);
 	initUI();
 }
 
@@ -22,4 +23,16 @@ void Body::paintEvent(QPaintEvent *event)
 {
 	QPainter painter(this);
 	painter.drawImage(0, 0, *this->image);
+}
+
+void Body::mousePressEvent(QMouseEvent *event)
+{
+	*this->offset = event->pos();
+}
+
+void Body::mouseMoveEvent(QMouseEvent *event)
+{
+	auto diff = event->pos() - *this->offset;
+	auto newpos = this->pos() + diff;
+	this->move(newpos);
 }
