@@ -10,13 +10,30 @@
 #include <QJsonObject>
 #include <QObject>
 
+#include "DollBody.hpp"
 
+/** @def
+ * Settings file name.
+ */
 #define SETTINGS_FILE "settings.json"
+
+/** @def
+ * Model data directory name.
+ */
 #define MODELS_DIR "models"
+
+/** @def
+ * Model file name.
+ */
 #define MODEL_FILE "model"
 
-
+/**
+ * @enum FileScope
+ * Kind of file path. It identify the prefix of the path.
+ */
 enum FileScope { None, System, User };
+
+
 struct DataLoadResult {
 	FileScope scope;
 	QJsonObject data;
@@ -72,11 +89,13 @@ int main(int argc, char **argv)
 	
 	// Read badge path for tray icon
 	//
-	QString badgePath;
+	QString badgePath, bodyPath;
 	if (model.scope == User) {
 		badgePath = appDir + QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("badge").toString();
+		bodyPath = appDir + QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("body").toString();
 	} else {
 		badgePath = QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("badge").toString();
+		bodyPath = QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("body").toString();
 	}
 
 	qDebug() << badgePath;
@@ -92,6 +111,10 @@ int main(int argc, char **argv)
 
 	trayIcon->setContextMenu(menu);
 	trayIcon->show();
+
+	DollBody *body = new DollBody();
+	body->setImage(bodyPath);
+	body->show();
 
 	return app.exec();
 }
