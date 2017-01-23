@@ -10,15 +10,30 @@
 #include <QJsonObject>
 #include <QObject>
 
-#include "Body.hpp"
+#include "DollBody.hpp"
 
-
+/** @def
+ * Settings file name.
+ */
 #define SETTINGS_FILE "settings.json"
+
+/** @def
+ * Model data directory name.
+ */
 #define MODELS_DIR "models"
+
+/** @def
+ * Model file name.
+ */
 #define MODEL_FILE "model"
 
-
+/**
+ * @enum FileScope
+ * Kind of file path. It identify the prefix of the path.
+ */
 enum FileScope { None, System, User };
+
+
 struct DataLoadResult {
 	FileScope scope;
 	QJsonObject data;
@@ -97,7 +112,8 @@ int main(int argc, char **argv)
 	trayIcon->setContextMenu(menu);
 	trayIcon->show();
 
-	Body *body = new Body(bodyPath);
+	DollBody *body = new DollBody();
+	body->setImage(bodyPath);
 	body->show();
 
 	return app.exec();

@@ -2,13 +2,17 @@
 #include <QBitmap>
 #include <QPainter>
 #include <QMouseEvent>
+#include <QVector>
 
-class Body : public QWidget
+#include "MessageView.hpp"
+
+class DollBody : public QWidget
 {
 	Q_OBJECT
 
 public:
-	Body(QString filename);
+	DollBody();
+	void setImage(QString filename);
 
 private slots:
 
@@ -20,6 +24,7 @@ protected:
 private:
 	QImage *image;
 	QPoint *offset;
-	void initUI();
+	QVector<MessageView> messages;
+	void dropMessages();
 	
 };

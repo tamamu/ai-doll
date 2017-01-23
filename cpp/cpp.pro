@@ -5,8 +5,8 @@
 TEMPLATE = app
 TARGET = AIDoll
 INCLUDEPATH += .
-QT += core widgets
+QT += core widgets network
 
 # Input
-SOURCES += Main.cpp Body.cpp
-HEADERS += Body.hpp
+SOURCES += Main.cpp DollBody.cpp MessageView.cpp MessageReceiver.cpp 
+HEADERS += DollBody.hpp MessageView.hpp MessageReceiver.hpp Message.hpp
