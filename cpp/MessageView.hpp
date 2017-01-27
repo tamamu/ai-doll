@@ -14,6 +14,8 @@ class MessageView : public QWidget
 	Q_OBJECT
 
 public:
+  int cnt;
+  Message *data;
 	MessageView(QWidget *parent, Message *data);
   void showMessage(QWidget *parent, QString message);
 
@@ -28,10 +30,8 @@ protected:
 
 private:
 	QWidget *parent;
-  Message *data;
   
   QLabel *label;
-  int cnt;
   QPropertyAnimation *fadeAnime;
   QPropertyAnimation *moveAnime;
   QTimer *timer;

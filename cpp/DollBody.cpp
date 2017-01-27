@@ -1,11 +1,18 @@
 #include "DollBody.hpp"
 
-DollBody::DollBody()
+
+
+DollBody::DollBody(MessageReceiver *parent)
 {
+	this->parent = parent;
 	this->offset = new QPoint(0, 0);
 	this->setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint | Qt::Tool);
 	this->setAttribute(Qt::WA_TranslucentBackground);
 	this->setAttribute(Qt::WA_ShowWithoutActivating);
+	this->fadeAnime = new QPropertyAnimation();
+	this->fadeAnime->setTargetObject(this);
+  this->fadeAnime->setPropertyName("windowOpacity");
+  this->fadeAnime->setDuration(150);
 }
 
 void DollBody::setImage(QString filename)
@@ -15,6 +22,44 @@ void DollBody::setImage(QString filename)
 	QBitmap mask = pixmap.mask();
 	this->setFixedSize(pixmap.width(), pixmap.height());
 	this->setMask(mask);
+}
+
+void DollBody::sortMessages()
+{
+  QVector<MessageView*> fixed;
+  QVector<MessageView*> nonfixed;
+  for (QVector<MessageView*>::iterator it = this->messages.begin(); it != this->messages.end(); ++it){
+    if ((*it)->data->type == Fixed) {
+      fixed << *it;
+    } else {
+      nonfixed << *it;
+    }
+  }
+  fixed.append(nonfixed);
+  this->messages = fixed;
+  for (int i=0; i < this->messages.size(); ++i){
+    this->messages[i]->cnt = i;
+  }
+}
+
+void DollBody::openAnimation()
+{
+	this->fadeAnime->setStartValue(0.0);
+  this->fadeAnime->setEndValue(1.0);
+  this->fadeAnime->start();
+}
+
+
+void DollBody::closeAnimation()
+{
+  this->fadeAnime = new QPropertyAnimation(this);
+  this->fadeAnime->setTargetObject(this);
+  this->fadeAnime->setPropertyName("windowOpacity");
+  this->fadeAnime->setDuration(150);
+  this->fadeAnime->setStartValue(this->windowOpacity());
+  this->fadeAnime->setEndValue(0.0);
+  connect(this->fadeAnime, SIGNAL(finished()), SLOT(close()));
+  this->fadeAnime->start();
 }
 
 void DollBody::paintEvent(QPaintEvent *event)

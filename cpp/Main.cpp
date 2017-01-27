@@ -1,65 +1,20 @@
-#include <iostream>
 #include <QDebug>
 #include <QApplication>
 #include <QAction>
 #include <QMenu>
 #include <QIcon>
-#include <QFile>
 #include <QSystemTrayIcon>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QObject>
 
-#include "DollBody.hpp"
+#include "DollSettings.hpp"
+#include "MessageReceiver.hpp"
 
 /** @def
  * Settings file name.
  */
 #define SETTINGS_FILE "settings.json"
-
-/** @def
- * Model data directory name.
- */
-#define MODELS_DIR "models"
-
-/** @def
- * Model file name.
- */
-#define MODEL_FILE "model"
-
-/**
- * @enum FileScope
- * Kind of file path. It identify the prefix of the path.
- */
-enum FileScope { None, System, User };
-
-
-struct DataLoadResult {
-	FileScope scope;
-	QJsonObject data;
-};
-
-DataLoadResult loadAppData(QString appdir, QString path)
-{
-	FileScope scope = None;
-	QString userOwnedFileName = appdir + path;
-	QFile file;
-	if (QFile::exists(userOwnedFileName)){
-		scope = User;
-		file.setFileName(userOwnedFileName);
-	}else if(QFile::exists(path)){
-		scope = System;
-		file.setFileName(path);
-	}else{
-		QJsonObject dummy;
-		return {scope, dummy};
-	}
-	file.open(QIODevice::ReadOnly | QIODevice::Text);
-	QString contents = file.readAll();
-	file.close();
-	QJsonObject obj = QJsonDocument::fromJson(contents.toUtf8()).object();
-	return {scope, obj};
-}
 
 int main(int argc, char **argv)
 {
@@ -72,36 +27,13 @@ int main(int argc, char **argv)
 
 	//  Load settings file
 	//
-	DataLoadResult settings = loadAppData(appDir, QString(SETTINGS_FILE));
-	if (settings.scope == None) {
-		std::cerr << "Settings file not found: settings.json" << std::endl;
-		exit(1);
-	}
+	DollSettings *settings = new DollSettings(appDir, QString(SETTINGS_FILE));
 
-	//	Load model file
-	//
-	QString modelName = settings.data.value("model").toString();
-	DataLoadResult model = loadAppData(appDir, QString(MODELS_DIR)+"/"+modelName+"/"+MODEL_FILE);
-	if (model.scope == None) {
-		std::cerr << "Model not found:" << modelName.toUtf8().constData() << std::endl;
-		exit(1);
-	}
-	
-	// Read badge path for tray icon
-	//
-	QString badgePath, bodyPath;
-	if (model.scope == User) {
-		badgePath = appDir + QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("badge").toString();
-		bodyPath = appDir + QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("body").toString();
-	} else {
-		badgePath = QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("badge").toString();
-		bodyPath = QString(MODELS_DIR)+"/"+modelName+"/"+model.data.value("body").toString();
-	}
-
-	qDebug() << badgePath;
+	QString iconPath = settings->getIconPath();
+	// qDebug() << iconPath;
 	
 	QSystemTrayIcon *trayIcon = new QSystemTrayIcon();
-	trayIcon->setIcon(QIcon(badgePath));
+	trayIcon->setIcon(QIcon(iconPath));
 
 	QMenu *menu = new QMenu();
 	
@@ -112,9 +44,7 @@ int main(int argc, char **argv)
 	trayIcon->setContextMenu(menu);
 	trayIcon->show();
 
-	DollBody *body = new DollBody();
-	body->setImage(bodyPath);
-	body->show();
+	MessageReceiver *receiver = new MessageReceiver(settings);
 
 	return app.exec();
 }

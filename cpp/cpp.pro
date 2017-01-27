@@ -8,5 +8,5 @@ INCLUDEPATH += .
 QT += core widgets network
 
 # Input
-SOURCES += Main.cpp DollBody.cpp MessageView.cpp MessageReceiver.cpp 
-HEADERS += DollBody.hpp MessageView.hpp MessageReceiver.hpp Message.hpp
+SOURCES += Main.cpp DollBody.cpp MessageView.cpp MessageReceiver.cpp DollSettings.cpp
+HEADERS += DollBody.hpp MessageView.hpp MessageReceiver.hpp Message.hpp DollSettings.hpp

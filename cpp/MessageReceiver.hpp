@@ -1,8 +1,11 @@
 #include <QObject>
 #include <QUdpSocket>
 #include <QVector>
+#include <QFont>
 
 #include "Message.hpp"
+#include "DollSettings.hpp"
+
 #include "DollBody.hpp"
 
 class MessageReceiver : public QObject
@@ -10,7 +13,7 @@ class MessageReceiver : public QObject
 	Q_OBJECT
 
 public:
-  MessageReceiver();
+  MessageReceiver(DollSettings *settings);
   QVector<Message> messages;
   void toggle();
 
@@ -20,13 +23,12 @@ private slots:
 protected:
 
 private:
-	//DollSettings settings;
+	DollSettings *settings;
   QFont *font;
   bool isBadge;
-  QUdpSocket socket;
-  DollBody body;
+  QUdpSocket *socket;
+  DollBody *body;
   
-  void sortByFixed();
   void showMessage();
   void deleteMessages();
   void parseMessage();
