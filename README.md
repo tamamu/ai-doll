@@ -54,6 +54,6 @@ Use `message|fixed|update` for `type`.
     {
         "type": "image",
         "body": "body-image-name",
-        "badge": "badge-image-name"
+        "icon": "icon-image-name"
     }
     ```
