@@ -4,8 +4,6 @@
 #include <QMenu>
 #include <QIcon>
 #include <QSystemTrayIcon>
-#include <QJsonDocument>
-#include <QJsonObject>
 #include <QObject>
 
 #include "DollSettings.hpp"
@@ -29,11 +27,14 @@ int main(int argc, char **argv)
 	//
 	DollSettings *settings = new DollSettings(appDir, QString(SETTINGS_FILE));
 
+	MessageReceiver *receiver = new MessageReceiver(settings);
+
 	QString iconPath = settings->getIconPath();
 	// qDebug() << iconPath;
 	
 	QSystemTrayIcon *trayIcon = new QSystemTrayIcon();
 	trayIcon->setIcon(QIcon(iconPath));
+	//connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), &app, SLOT(receiver->(QSystemTrayIcon::ActivationReason)));
 
 	QMenu *menu = new QMenu();
 	
@@ -44,7 +45,7 @@ int main(int argc, char **argv)
 	trayIcon->setContextMenu(menu);
 	trayIcon->show();
 
-	MessageReceiver *receiver = new MessageReceiver(settings);
+	
 
 	return app.exec();
 }
